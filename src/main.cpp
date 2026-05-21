@@ -18,14 +18,16 @@ GLuint gVertexArrayObject = 0;
 
 // VBO
 GLuint gVertexBufferObject = 0;
-GLuint gVertexBufferObject2 = 0;
+
+// IBO
+GLuint gIndexBufferObject = 0;
 
 // Program Object for shaders
 GLuint gGraphicsPipelineShaderProgram = 0;
 
 std::string LoadShaderAsString(const std::string& filename)
 {
-    std::string result = "";
+   std::string result = "";
 
     std::string line = "";
     std::ifstream myFile(filename.c_str());
@@ -152,53 +154,18 @@ void VertexSpec()
 {
     const std::vector<GLfloat> vertexData
     {
-        // triangle 1
-        -1.0f, 0.3f, 0.0f, // v1 pos
-        0.0f, 0.0f, 1.0f,  // v1 color
-        1.0f, 1.0f, 0.0f, // v2 pos
-        0.0f, 0.0f, 1.0f, // v2 color
-        -1.0f, 1.0f, 0.0f, // v3 pos
-        0.0f, 0.0f, 1.0f, // v3 color
-        // triangle 2
-        -1.0f, 0.3f, 0.0f, // v1 pos
-        0.0f, 0.0f, 1.0f,  // v1 color
-        1.0f, 0.3f, 0.0f, // v2 pos
-        0.0f, 0.0f, 1.0f, // v2 color
-        1.0f, 1.0f, 0.0f, // v3 pos
-        0.0f, 0.0f, 1.0f,// v3 color
-
-        // triangle 1
-        -1.0f, -0.3f, 0.0f, // v1 pos
-        1.0f, 0.0f, 0.0f,  // v1 color
-        1.0f, -0.3f, 0.0f, // v2 pos
-        1.0f, 0.0f, 0.0f, // v2 color
-        1.0f, 0.3f, 0.0f, // v3 pos
-        1.0f, 0.0f, 0.0f, // v3 color
-        // triangle 2
-        -1.0f, -0.3f, 0.0f, // v1 pos
-        1.0f, 0.0f, 0.0f,  // v1 color
-        1.0f, 0.3f, 0.0f, // v2 pos
-        1.0f, 0.0f, 0.0f, // v2 color
-        -1.0f, 0.3f, 0.0f, // v3 pos
-        1.0f, 0.0f, 0.0f,// v3 color
-
-
-
-        // triangle 1
-        -1.0f, -1.0f, 0.0f, // v1 pos
-        0.0f, 0.8f, 0.0f,  // v1 color
-        1.0f, -1.0f, 0.0f, // v2 pos
-        0.0f, 0.8f, 0.0f, // v2 color
-        1.0f, -0.3f, 0.0f, // v3 pos
-        0.0f, 0.8f, 0.0f, // v3 color
-        // triangle 2
-        -1.0f, -1.0f, 0.0f, // v1 pos
-        0.0f, 0.8f, 0.0f,  // v1 color
-        1.0f, -0.3f, 0.0f, // v2 pos
-        0.0f, 0.8f, 0.0f, // v2 color
-        -1.0f, -0.3f, 0.0f, // v3 pos
-        0.0f, 0.8f, 0.0f // v3 color
-
+        // vertex 1 (pos, color)
+        -0.5f, -0.5f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        // vertex 2
+        0.5f, -0.5f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        // vertex 3
+        -0.5f, 0.5f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        // vertex 4
+        0.5f, 0.5f, 0.0f,
+        0.0f, 0.0f, 1.0f, 
     };
 
 
@@ -213,6 +180,17 @@ void VertexSpec()
         vertexData.size() * sizeof(GL_FLOAT),
         vertexData.data(),
         GL_STATIC_DRAW
+    );
+    
+    const std::vector<GLuint> indexBufferData {2,0,1, 3,2,1};
+
+    // Setup IBO (EBO)
+    glGenBuffers(1, &gIndexBufferObject);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIndexBufferObject);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                indexBufferData.size() * sizeof(GL_FLOAT),
+                indexBufferData.data(),
+                GL_STATIC_DRAW
     );
 
     glEnableVertexAttribArray(0);
@@ -272,8 +250,12 @@ void Draw()
     glBindVertexArray(gVertexArrayObject);
     glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
 
-    glDrawArrays(GL_TRIANGLES, 0, 18);
-
+    //glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawElements(GL_TRIANGLES,
+                    6,
+                    GL_UNSIGNED_INT,
+                    0
+    );
 }
 
 void MainLoop()
