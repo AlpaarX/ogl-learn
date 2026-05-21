@@ -2,9 +2,11 @@
 #include <SDL3/SDL.h>
 #include <iostream>
 #include <vector>
+#include <fstream>
 
-int gScreenHeight = 840;
-int gScreenWidth = 680;
+int gScreenWidth = 800;
+int gScreenHeight = 600;
+
 SDL_Window*   gGraphicsApplicationWindow = nullptr;
 SDL_GLContext gOpenGLContext = nullptr;
 
@@ -16,26 +18,37 @@ GLuint gVertexArrayObject = 0;
 
 // VBO
 GLuint gVertexBufferObject = 0;
+GLuint gVertexBufferObject2 = 0;
 
 // Program Object for shaders
 GLuint gGraphicsPipelineShaderProgram = 0;
 
-const std::string gVertexShaderSource = 
-"#version 430 core\n"
-"in vec4 position;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(position.x, position.y, position.z, position.w);\n"
-"}\n";
+std::string LoadShaderAsString(const std::string& filename)
+{
+    std::string result = "";
 
-const std::string gFragmentShaderSource = 
-"#version 430 core\n"
-"out vec4 color;\n"
-"void main()\n"
-"{\n"
-"   color = vec4(1.0f, 0.5f, 0.0f, 1.0f);\n"
-"}\n";
+    std::string line = "";
+    std::ifstream myFile(filename.c_str());
 
+    if (myFile.is_open())
+    {
+        while (std::getline(myFile, line))
+        {
+            result += line + '\n';
+        }
+        myFile.close();
+    }
+    
+    if (result.size() >= 3 &&
+    (unsigned char)result[0] == 0xEF &&
+    (unsigned char)result[1] == 0xBB &&
+    (unsigned char)result[2] == 0xBF)
+    {
+       result.erase(0, 3);
+    }
+
+    return result;
+}
 template <typename T>
 void CatchErr(T instance, std::string message)
 {
@@ -49,7 +62,7 @@ void CatchErr(T instance, std::string message)
 
 GLuint CompileShader(GLuint type, const std::string& source)
 {
-    GLuint shaderObject;
+    GLuint shaderObject = 0;
 
     if (type == GL_VERTEX_SHADER)
     {
@@ -61,6 +74,21 @@ GLuint CompileShader(GLuint type, const std::string& source)
     const char* src = source.c_str();
     glShaderSource(shaderObject, 1, &src, nullptr);
     glCompileShader(shaderObject);
+    
+    GLint success;
+    glGetShaderiv(shaderObject, GL_COMPILE_STATUS, &success);
+
+    if (!success)
+    {
+        GLint len = 0;
+        glGetShaderiv(shaderObject, GL_INFO_LOG_LENGTH, &len);
+
+        std::string log(len, '\0');
+
+        glGetShaderInfoLog(shaderObject, len, nullptr, log.data());
+
+        std::cerr << log << std::endl;
+    }
 
     return shaderObject;
 }
@@ -84,7 +112,10 @@ GLuint CreateShaderProgram(const std::string& vertexshadersource,
 
 void CreateGraphicsPipeline()
 {
-    gGraphicsPipelineShaderProgram = CreateShaderProgram(gVertexShaderSource, gFragmentShaderSource);
+    std::cout << "CreateGraphicsPipeline called" << std::endl;
+    std::string vertexShaderSource   = LoadShaderAsString("./shaders/vert.glsl");
+    std::string fragmentShaderSource = LoadShaderAsString("./shaders/frag.glsl");
+    gGraphicsPipelineShaderProgram = CreateShaderProgram(vertexShaderSource, fragmentShaderSource);
 }
 
 void GetOpenGLVersionInfo()
@@ -98,7 +129,7 @@ void GetOpenGLVersionInfo()
 void InitializeProgram()
 {   
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 6);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
@@ -119,37 +150,94 @@ void InitializeProgram()
 
 void VertexSpec()
 {
-    const std::vector<GLfloat> vertexPos
-    {   //x     y      z
-        -0.8f, -0.8f, 0.0f,
-        0.8f, -0.8f, 0.0f,
-        0.0f, 0.8f, 0.0f
+    const std::vector<GLfloat> vertexData
+    {
+        // triangle 1
+        -1.0f, 0.3f, 0.0f, // v1 pos
+        0.0f, 0.0f, 1.0f,  // v1 color
+        1.0f, 1.0f, 0.0f, // v2 pos
+        0.0f, 0.0f, 1.0f, // v2 color
+        -1.0f, 1.0f, 0.0f, // v3 pos
+        0.0f, 0.0f, 1.0f, // v3 color
+        // triangle 2
+        -1.0f, 0.3f, 0.0f, // v1 pos
+        0.0f, 0.0f, 1.0f,  // v1 color
+        1.0f, 0.3f, 0.0f, // v2 pos
+        0.0f, 0.0f, 1.0f, // v2 color
+        1.0f, 1.0f, 0.0f, // v3 pos
+        0.0f, 0.0f, 1.0f,// v3 color
+
+        // triangle 1
+        -1.0f, -0.3f, 0.0f, // v1 pos
+        1.0f, 0.0f, 0.0f,  // v1 color
+        1.0f, -0.3f, 0.0f, // v2 pos
+        1.0f, 0.0f, 0.0f, // v2 color
+        1.0f, 0.3f, 0.0f, // v3 pos
+        1.0f, 0.0f, 0.0f, // v3 color
+        // triangle 2
+        -1.0f, -0.3f, 0.0f, // v1 pos
+        1.0f, 0.0f, 0.0f,  // v1 color
+        1.0f, 0.3f, 0.0f, // v2 pos
+        1.0f, 0.0f, 0.0f, // v2 color
+        -1.0f, 0.3f, 0.0f, // v3 pos
+        1.0f, 0.0f, 0.0f,// v3 color
+
+
+
+        // triangle 1
+        -1.0f, -1.0f, 0.0f, // v1 pos
+        0.0f, 0.8f, 0.0f,  // v1 color
+        1.0f, -1.0f, 0.0f, // v2 pos
+        0.0f, 0.8f, 0.0f, // v2 color
+        1.0f, -0.3f, 0.0f, // v3 pos
+        0.0f, 0.8f, 0.0f, // v3 color
+        // triangle 2
+        -1.0f, -1.0f, 0.0f, // v1 pos
+        0.0f, 0.8f, 0.0f,  // v1 color
+        1.0f, -0.3f, 0.0f, // v2 pos
+        0.0f, 0.8f, 0.0f, // v2 color
+        -1.0f, -0.3f, 0.0f, // v3 pos
+        0.0f, 0.8f, 0.0f // v3 color
+
     };
+
 
     // VAO preparation
     glGenVertexArrays(1, &gVertexArrayObject);
     glBindVertexArray(gVertexArrayObject);
-   // VBO preparation
+    // VBO preparation
     glGenBuffers(1, &gVertexBufferObject);
     glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
     glBufferData(
         GL_ARRAY_BUFFER,
-        vertexPos.size() * sizeof(GLfloat),
-        vertexPos.data(),
+        vertexData.size() * sizeof(GL_FLOAT),
+        vertexData.data(),
         GL_STATIC_DRAW
     );
+
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(
         0,
         3,
         GL_FLOAT,
         GL_FALSE,
-        0,
+        sizeof(GL_FLOAT)*6,
         (void*)0
     );
 
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(
+        1,
+        3,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(GL_FLOAT)*6,
+        (void*)(sizeof(GL_FLOAT)*3)
+    );
+
     glBindVertexArray(0);
-    glEnableVertexAttribArray(0);
+    glDisableVertexAttribArray(0); 
+    glDisableVertexAttribArray(1);
 }
 
 void Input()
@@ -171,7 +259,7 @@ void PreDraw()
     glDisable(GL_CULL_FACE);
 
     glViewport(0, 0, gScreenWidth, gScreenHeight);
-    glClearColor(0.204f, 0.698f, 0.878f, 1.f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.f);
 
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
@@ -184,7 +272,7 @@ void Draw()
     glBindVertexArray(gVertexArrayObject);
     glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
 
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLES, 0, 18);
 
 }
 
@@ -212,9 +300,9 @@ int main()
 {
     InitializeProgram();
 
-    VertexSpec();
-
     CreateGraphicsPipeline();
+
+    VertexSpec();
 
     MainLoop();
 
