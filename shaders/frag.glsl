@@ -2,11 +2,14 @@
 
 in vec3 v_vertexColors;
 
+uniform float u_Xoffset;
+uniform float u_Scale;
+
 out vec4 color;
 
 void main()
 {
-   color = vec4(v_vertexColors.r, v_vertexColors.g, v_vertexColors.b, 1.0);
+   color = vec4(v_vertexColors.r + u_Xoffset, v_vertexColors.g + u_Scale, v_vertexColors.b + u_Xoffset - u_Scale, 1.0);
 }
 
 

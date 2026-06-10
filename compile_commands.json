@@ -1,0 +1,38 @@
+[
+  {
+    "file": "src/main.cpp",
+    "arguments": [
+      "/usr/bin/g++",
+      "src/main.cpp",
+      "-Iinclude",
+      "-o",
+      "app"
+    ],
+    "directory": "/home/alpaar/Developer/ogl-learn",
+    "output": "app"
+  },
+  {
+    "file": "src/glad.c",
+    "arguments": [
+      "/usr/bin/g++",
+      "src/glad.c",
+      "-Iinclude",
+      "-o",
+      "app"
+    ],
+    "directory": "/home/alpaar/Developer/ogl-learn",
+    "output": "app"
+  },
+  {
+    "file": "utils/utils.cpp",
+    "arguments": [
+      "/usr/bin/g++",
+      "utils/utils.cpp",
+      "-Iinclude",
+      "-o",
+      "app"
+    ],
+    "directory": "/home/alpaar/Developer/ogl-learn",
+    "output": "app"
+  }
+]

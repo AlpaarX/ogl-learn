@@ -1,11 +1,20 @@
 #include <glad/glad.h>
 #include <SDL3/SDL.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+
 #include <iostream>
 #include <vector>
-#include <fstream>
+#include "../utils/utils.hpp"
 
-int gScreenWidth = 800;
-int gScreenHeight = 600;
+int gScreenWidth = 1920;
+int gScreenHeight = 1080;
+
+glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 
 SDL_Window*   gGraphicsApplicationWindow = nullptr;
 SDL_GLContext gOpenGLContext = nullptr;
@@ -25,32 +34,6 @@ GLuint gIndexBufferObject = 0;
 // Program Object for shaders
 GLuint gGraphicsPipelineShaderProgram = 0;
 
-std::string LoadShaderAsString(const std::string& filename)
-{
-   std::string result = "";
-
-    std::string line = "";
-    std::ifstream myFile(filename.c_str());
-
-    if (myFile.is_open())
-    {
-        while (std::getline(myFile, line))
-        {
-            result += line + '\n';
-        }
-        myFile.close();
-    }
-    
-    if (result.size() >= 3 &&
-    (unsigned char)result[0] == 0xEF &&
-    (unsigned char)result[1] == 0xBB &&
-    (unsigned char)result[2] == 0xBF)
-    {
-       result.erase(0, 3);
-    }
-
-    return result;
-}
 template <typename T>
 void CatchErr(T instance, std::string message)
 {
@@ -115,8 +98,8 @@ GLuint CreateShaderProgram(const std::string& vertexshadersource,
 void CreateGraphicsPipeline()
 {
     std::cout << "CreateGraphicsPipeline called" << std::endl;
-    std::string vertexShaderSource   = LoadShaderAsString("./shaders/vert.glsl");
-    std::string fragmentShaderSource = LoadShaderAsString("./shaders/frag.glsl");
+    std::string vertexShaderSource   = utils::LoadShaderAsString("./shaders/vert.glsl");
+    std::string fragmentShaderSource = utils::LoadShaderAsString("./shaders/frag.glsl");
     gGraphicsPipelineShaderProgram = CreateShaderProgram(vertexShaderSource, fragmentShaderSource);
 }
 
@@ -154,18 +137,18 @@ void VertexSpec()
 {
     const std::vector<GLfloat> vertexData
     {
-        // vertex 1 (pos, color)
-        -0.5f, -0.5f, 0.0f,
-        0.0f, 0.0f, 1.0f,
+        // vertex 0 (pos, color)
+        -0.2f, -0.2f, 0.0f,
+        0.5f, 0.5f, 1.0f,
+        // vertex 1
+        0.2f, -0.2f, 0.0f,
+        0.5f, 0.5f, 1.0f,
         // vertex 2
-        0.5f, -0.5f, 0.0f,
-        0.0f, 0.0f, 1.0f,
+        -0.2f, 0.2f, 0.0f,
+        0.5f, 0.5f, 1.0f,
         // vertex 3
-        -0.5f, 0.5f, 0.0f,
-        0.0f, 0.0f, 1.0f,
-        // vertex 4
-        0.5f, 0.5f, 0.0f,
-        0.0f, 0.0f, 1.0f, 
+        0.2f, 0.2f, 0.0f,
+        0.5f, 0.5f, 1.0f, 
     };
 
 
@@ -229,6 +212,26 @@ void Input()
 
         }
     }
+
+    const bool *state = SDL_GetKeyboardState(NULL);
+    const float cameraSpeed = 0.0001f;
+    if (state[SDL_SCANCODE_W])
+    {
+       cameraPos += cameraSpeed * cameraFront;
+
+    }
+    if (state[SDL_SCANCODE_S])
+    {
+       cameraPos -= cameraSpeed * cameraFront;
+    }
+    if (state[SDL_SCANCODE_A])
+    {
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+    if (state[SDL_SCANCODE_D])
+    {
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
 }
 
 void PreDraw()
@@ -242,11 +245,16 @@ void PreDraw()
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     glUseProgram(gGraphicsPipelineShaderProgram);
+    GLint mvpLoc = glGetUniformLocation(gGraphicsPipelineShaderProgram, "u_MVP");
+    glm::mat4 proj  = glm::perspective(glm::radians(45.0f), (float)gScreenWidth/gScreenHeight, 0.1f, 100.0f);
+    glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 mvp   = proj * view * model;
+    glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
 }
 
 void Draw()
 {
-    
     glBindVertexArray(gVertexArrayObject);
     glBindBuffer(GL_ARRAY_BUFFER, gVertexBufferObject);
 
